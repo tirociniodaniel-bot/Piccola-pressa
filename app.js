@@ -1,4 +1,7 @@
 const fileInput = document.querySelector('#file-input');
+const folderInput = document.querySelector('#folder-input');
+const folderPicker = document.querySelector('#folder-picker');
+const folderPickButton = document.querySelector('#folder-pick-button');
 const dropZone = document.querySelector('#drop-zone');
 const maxWidthInput = document.querySelector('#max-width');
 const qualityInput = document.querySelector('#quality');
@@ -61,7 +64,7 @@ function updateSelection() {
     const metadata = document.createElement('span');
     metadata.className = 'file-meta';
     const name = document.createElement('strong');
-    name.textContent = item.file.name;
+    name.textContent = item.file.webkitRelativePath || item.file.name;
     const details = document.createElement('span');
     details.textContent = `${item.image.naturalWidth} × ${item.image.naturalHeight} px · ${formatBytes(item.file.size)}`;
     metadata.append(name, details);
@@ -81,6 +84,8 @@ function updateSelection() {
     ? 'Conversione in corso…'
     : `Converti ${selectedItems.length || ''} ${selectedItems.length === 1 ? 'immagine' : 'immagini'} in WebP`.replace(/\s+/g, ' ').trim();
   fileInput.disabled = isConverting;
+  folderInput.disabled = isConverting;
+  folderPickButton.disabled = isConverting;
   dropZone.disabled = isConverting;
   maxWidthInput.disabled = isConverting;
   targetWidthInput.disabled = isConverting;
@@ -105,8 +110,96 @@ function clearFiles() {
   clearResults();
   selectedItems = [];
   fileInput.value = '';
+  folderInput.value = '';
   errorMessage.hidden = true;
   updateSelection();
+}
+
+async function filesFromHandle(handle) {
+  if (handle.kind === 'file') return [await handle.getFile()];
+  const files = [];
+  for await (const child of handle.values()) files.push(...await filesFromHandle(child));
+  return files;
+}
+
+function fileFromEntry(entry) {
+  return new Promise((resolve) => entry.file(resolve, () => resolve(null)));
+}
+
+function entriesFromDirectory(entry) {
+  return new Promise((resolve) => {
+    const reader = entry.createReader();
+    const entries = [];
+    const readNextBatch = () => {
+      reader.readEntries((batch) => {
+        if (!batch.length) {
+          resolve(entries);
+          return;
+        }
+        entries.push(...batch);
+        readNextBatch();
+      }, () => resolve(entries));
+    };
+    readNextBatch();
+  });
+}
+
+async function filesFromEntry(entry) {
+  try {
+    if (entry.isFile) {
+      const file = await fileFromEntry(entry);
+      return file ? [file] : [];
+    }
+    if (!entry.isDirectory) return [];
+    const entries = await entriesFromDirectory(entry);
+    const nestedFiles = await Promise.all(entries.map(filesFromEntry));
+    return nestedFiles.flat();
+  } catch {
+    return [];
+  }
+}
+
+async function filesFromDrop(dataTransfer) {
+  const items = Array.from(dataTransfer.items || []);
+  if (!items.length) return Array.from(dataTransfer.files || []);
+
+  const itemData = items.map((item) => {
+    let handlePromise = Promise.resolve(null);
+    if (item.kind === 'file' && typeof item.getAsFileSystemHandle === 'function') {
+      try {
+        handlePromise = item.getAsFileSystemHandle().catch(() => null);
+      } catch {
+        handlePromise = Promise.resolve(null);
+      }
+    }
+    const entry = item.kind === 'file' ? item.webkitGetAsEntry?.() : null;
+    const file = item.kind === 'file' ? item.getAsFile() : null;
+    return { handlePromise, entry, file };
+  });
+  const handles = await Promise.all(itemData.map((item) => item.handlePromise));
+  const files = [];
+  for (const [index, item] of itemData.entries()) {
+    if (handles[index]) {
+      try {
+        files.push(...await filesFromHandle(handles[index]));
+        continue;
+      } catch {
+      }
+    }
+    if (item.entry) files.push(...await filesFromEntry(item.entry));
+    else if (item.file) files.push(item.file);
+  }
+  return files;
+}
+
+async function handleDrop(event) {
+  const files = await filesFromDrop(event.dataTransfer);
+  const images = files.filter(isSupportedImage);
+  if (!images.length) {
+    showError('Non ho trovato immagini JPG, PNG o WebP nella selezione o nella cartella.');
+    return;
+  }
+  await addImages(images);
 }
 
 async function addImages(files) {
@@ -317,6 +410,14 @@ fileInput.addEventListener('change', (event) => {
   addImages([...event.target.files]);
   fileInput.value = '';
 });
+folderInput.addEventListener('change', (event) => {
+  const images = [...event.target.files].filter(isSupportedImage);
+  if (!images.length) showError('La cartella non contiene immagini JPG, PNG o WebP.');
+  else addImages(images);
+  folderInput.value = '';
+});
+folderPicker.hidden = !('webkitdirectory' in document.createElement('input'));
+folderPickButton.addEventListener('click', () => folderInput.click());
 for (const eventName of ['dragenter', 'dragover']) {
   dropZone.addEventListener(eventName, (event) => {
     event.preventDefault();
@@ -329,7 +430,7 @@ for (const eventName of ['dragleave', 'drop']) {
     dropZone.classList.remove('is-over');
   });
 }
-dropZone.addEventListener('drop', (event) => addImages([...event.dataTransfer.files]));
+dropZone.addEventListener('drop', handleDrop);
 qualityInput.addEventListener('input', () => {
   qualityValue.value = `${qualityInput.value}%`;
   qualityValue.textContent = `${qualityInput.value}%`;

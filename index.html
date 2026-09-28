@@ -7,7 +7,7 @@
     <title>Piccola Pressa - Convertitore WebP</title>
     <link rel="stylesheet" href="./style.css" />
     <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js" defer></script>
-    <script src="./app.js?v=3" defer></script>
+    <script src="./app.js?v=4" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -70,10 +70,15 @@
           <input id="file-input" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" multiple />
           <button id="drop-zone" class="drop-zone" type="button" aria-describedby="file-help">
             <span class="upload-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M16 21V5m0 0L9.5 11.5M16 5l6.5 6.5M6 19v7h20v-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
-            <span class="drop-title">Trascina qui le tue immagini</span>
+            <span class="drop-title">Trascina qui immagini o una cartella</span>
             <span class="drop-or">oppure <span class="browse-link">scegli più file</span></span>
             <span id="file-help" class="file-help">JPG, PNG o WebP · massimo 30 MB per immagine</span>
           </button>
+          <input id="folder-input" class="visually-hidden" type="file" webkitdirectory directory multiple />
+          <div id="folder-picker" class="folder-picker">
+            <span>Oppure importa una cartella</span>
+            <button id="folder-pick-button" class="text-button" type="button">Seleziona cartella</button>
+          </div>
           <div id="selection-summary" class="selection-summary" hidden>
             <span id="selection-count"></span>
             <button id="clear-files" class="text-button" type="button">Rimuovi tutte</button>

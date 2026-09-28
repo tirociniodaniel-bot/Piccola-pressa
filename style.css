@@ -75,6 +75,9 @@ h2 { margin: 0; font: 700 15px 'Avenir Next', Avenir, sans-serif; letter-spacing
 .drop-or { margin-top: 6px; color: #849088; font-size: 11px; }
 .browse-link { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
 .file-help { margin-top: 15px; color: #9aa39c; font: 9px var(--mono); }
+.folder-picker { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 10px; color: #849088; font-size: 10px; }
+.folder-picker[hidden] { display: none; }
+.folder-picker .text-button { flex: none; }
 .selection-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 13px; color: #66746d; font: 10px var(--mono); }
 .selection-summary[hidden], .selected-files[hidden], .result-section[hidden], .error-message[hidden] { display: none; }
 .text-button { padding: 4px 0; border: 0; background: transparent; color: var(--green); font-size: 10px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }

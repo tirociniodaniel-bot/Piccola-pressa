@@ -4,7 +4,7 @@ Web app leggera per ridimensionare immagini e convertirle in WebP. L’elaborazi
 
 ## Utilizzo
 
-Apri `index.html` in un browser aggiornato, trascina o seleziona più file JPG, PNG o WebP, scegli il metodo di ridimensionamento e la qualità, quindi scegli **Converti immagini in WebP**. Scarica i risultati uno alla volta oppure tutti insieme in un archivio ZIP.
+Apri `index.html` in un browser aggiornato, trascina più file o un’intera cartella di immagini JPG, PNG o WebP, oppure usa **Seleziona cartella**. Scegli il metodo di ridimensionamento e la qualità, quindi scegli **Converti immagini in WebP**. Scarica i risultati uno alla volta oppure tutti insieme in un archivio ZIP.
 
 La modalità **Larghezza massima** è predefinita a 1000 px, mantiene le proporzioni e non ingrandisce le immagini più piccole. La modalità **Dimensioni esatte** permette di impostare larghezza e altezza oppure scegliere i preset T&I (1486 × 992 px) e Innoeco (1080 × 810 px). Se i rapporti differiscono, l’immagine viene ritagliata al centro per riempire le dimensioni richieste. Il limite per immagine è 30 MB.
 
