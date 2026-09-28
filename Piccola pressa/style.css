@@ -87,7 +87,9 @@ h1 { margin: 0; font-size: clamp(30px, 3vw, 40px); line-height: 1.08; letter-spa
 
 .workbench { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(360px, .8fr); align-items: start; gap: 22px; }
 .preview-panel, .settings-panel, .result-section { min-width: 0; border: 1px solid var(--line); border-radius: var(--radius-panel); background: var(--paper); box-shadow: var(--shadow-panel); }
-.preview-panel { overflow: hidden; }
+.preview-panel { position: relative; overflow: hidden; }
+.preview-panel.is-over { border-color: var(--green); box-shadow: 0 0 0 3px rgb(23 101 77 / 12%), var(--shadow-panel); }
+.preview-panel.is-over::after { position: absolute; z-index: 5; inset: 78px 10px 10px; display: grid; place-items: center; border: 2px dashed var(--green); border-radius: 12px; background: rgb(243 248 239 / 88%); color: var(--green-dark); font-size: 18px; font-weight: 750; text-align: center; content: 'Rilascia le immagini per aggiungerle al lotto'; pointer-events: none; }
 .preview-header { min-height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 20px; border-bottom: 1px solid #e8ebe5; }
 .preview-file-copy { min-width: 0; }
 .preview-header h2 { margin: 0; overflow: hidden; font-size: 18px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
@@ -253,6 +255,7 @@ h1 { margin: 0; font-size: clamp(30px, 3vw, 40px); line-height: 1.08; letter-spa
   .import-error-actions button { min-height: 44px; font-size: 14px; }
   .workbench { gap: 13px; }
   .preview-panel, .settings-panel, .result-section { border-radius: 14px; }
+  .preview-panel.is-over::after { inset: 70px 7px 7px; font-size: 16px; }
   .preview-header { min-height: 70px; padding: 13px 14px; }
   .preview-header h2 { font-size: 16px; }
   .file-meta { max-width: min(62vw, 270px); font-size: 12px; }

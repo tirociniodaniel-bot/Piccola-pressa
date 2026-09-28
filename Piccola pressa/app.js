@@ -2,6 +2,7 @@ const fileInput = document.querySelector('#file-input');
 const folderInput = document.querySelector('#folder-input');
 const folderPickButton = document.querySelector('#folder-pick-button');
 const uploadPanel = document.querySelector('.upload-panel');
+const previewPanel = document.querySelector('.preview-panel');
 const dropZone = document.querySelector('#drop-zone');
 const emptyAddButton = document.querySelector('#empty-add-button');
 const uploadStatus = document.querySelector('#upload-status');
@@ -48,7 +49,6 @@ const state = {
   nextImportErrorId: 0,
   isLoading: false,
   isConverting: false,
-  dragDepth: 0,
   resizeMode: 'max-side',
   conversionCurrentIndex: 0,
   conversionTotal: 0,
@@ -73,6 +73,17 @@ function formatDimensions(width, height) {
 function isSupportedImage(file) {
   const extension = (file.name.split('.').pop() || '').toLowerCase();
   return SUPPORTED_MIME_TYPES.includes(file.type) || SUPPORTED_EXTENSIONS.includes(extension);
+}
+
+function isSystemMetadataFile(file) {
+  const path = (file.webkitRelativePath || file.name).replaceAll('\\', '/');
+  const normalizedPath = path.toLowerCase();
+  const name = normalizedPath.split('/').pop();
+  return name === '.ds_store'
+    || name === 'thumbs.db'
+    || name === 'desktop.ini'
+    || name.startsWith('._')
+    || normalizedPath.split('/').includes('__macosx');
 }
 
 function getExtension(file) {
@@ -223,6 +234,7 @@ async function addImages(files) {
 
   const validFiles = [];
   for (const file of files) {
+    if (isSystemMetadataFile(file)) continue;
     if (!isSupportedImage(file)) {
       addImportError(file.name, 'Formato non supportato. Scegli un file JPG, PNG o WebP.');
     } else if (file.size > MAX_FILE_SIZE) {
@@ -904,33 +916,33 @@ emptyAddButton.addEventListener('click', () => fileInput.click());
 function hasDraggedFiles(event) {
   return Array.from(event.dataTransfer?.types || []).includes('Files');
 }
-uploadPanel.addEventListener('dragenter', (event) => {
-  if (!hasDraggedFiles(event)) return;
-  event.preventDefault();
-  state.dragDepth += 1;
-  uploadPanel.classList.add('is-over');
-  dropZone.classList.add('is-over');
-});
-uploadPanel.addEventListener('dragover', (event) => {
-  if (!hasDraggedFiles(event)) return;
-  event.preventDefault();
-});
-uploadPanel.addEventListener('dragleave', (event) => {
-  if (!hasDraggedFiles(event)) return;
-  event.preventDefault();
-  state.dragDepth = Math.max(0, state.dragDepth - 1);
-  if (state.dragDepth === 0) {
-    uploadPanel.classList.remove('is-over');
-    dropZone.classList.remove('is-over');
-  }
-});
-uploadPanel.addEventListener('drop', (event) => {
-  if (!hasDraggedFiles(event)) return;
-  state.dragDepth = 0;
-  uploadPanel.classList.remove('is-over');
-  dropZone.classList.remove('is-over');
-  handleDrop(event);
-});
+
+function bindFileDropTarget(target, onDragStateChange = () => {}) {
+  target.addEventListener('dragenter', (event) => {
+    if (!hasDraggedFiles(event)) return;
+    event.preventDefault();
+    target.classList.add('is-over');
+    onDragStateChange(true);
+  });
+  target.addEventListener('dragover', (event) => {
+    if (hasDraggedFiles(event)) event.preventDefault();
+  });
+  target.addEventListener('dragleave', (event) => {
+    if (!hasDraggedFiles(event)) return;
+    if (event.relatedTarget instanceof Node && target.contains(event.relatedTarget)) return;
+    target.classList.remove('is-over');
+    onDragStateChange(false);
+  });
+  target.addEventListener('drop', (event) => {
+    if (!hasDraggedFiles(event)) return;
+    target.classList.remove('is-over');
+    onDragStateChange(false);
+    handleDrop(event);
+  });
+}
+
+bindFileDropTarget(uploadPanel, (isOver) => dropZone.classList.toggle('is-over', isOver));
+bindFileDropTarget(previewPanel);
 
 maxSideInput.addEventListener('input', updateSettingsAfterChange);
 targetWidthInput.addEventListener('input', updateSettingsAfterChange);
