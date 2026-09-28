@@ -7,7 +7,7 @@
     <title>Piccola Pressa - Convertitore WebP</title>
     <link rel="stylesheet" href="./style.css" />
     <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js" defer></script>
-    <script src="./app.js?v=4" defer></script>
+    <script src="./app.js?v=5" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -29,16 +29,16 @@
         <div class="settings-panel">
           <div class="section-heading"><span class="step-number">01</span><h2>Imposta l’uscita</h2></div>
           <div class="mode-switch" role="group" aria-label="Metodo di ridimensionamento">
-            <button class="mode-button" type="button" data-mode="max-width" aria-pressed="true">Larghezza massima</button>
+            <button class="mode-button" type="button" data-mode="max-side" aria-pressed="true">Lato massimo</button>
             <button class="mode-button" type="button" data-mode="exact" aria-pressed="false">Dimensioni esatte</button>
           </div>
-          <div id="max-width-settings" class="mode-settings">
-            <label class="field-label" for="max-width">Larghezza massima <span>pixel</span></label>
+          <div id="max-side-settings" class="mode-settings">
+            <label class="field-label" for="max-side">Lato massimo <span>pixel</span></label>
             <div class="width-control">
-              <input id="max-width" type="number" min="1" max="20000" value="1000" inputmode="numeric" aria-describedby="width-help" />
+              <input id="max-side" type="number" min="1" max="20000" value="1000" inputmode="numeric" aria-describedby="width-help" />
               <span class="unit">px</span>
             </div>
-            <p id="width-help" class="field-help">L’altezza si adatta automaticamente. Le immagini più piccole non vengono ingrandite.</p>
+            <p id="width-help" class="field-help">Il lato più lungo viene ridimensionato al limite, mantenendo le proporzioni. Le immagini più piccole non vengono ingrandite.</p>
           </div>
           <div id="exact-size-settings" class="mode-settings" hidden>
             <div class="exact-fields">

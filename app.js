@@ -3,7 +3,7 @@ const folderInput = document.querySelector('#folder-input');
 const folderPicker = document.querySelector('#folder-picker');
 const folderPickButton = document.querySelector('#folder-pick-button');
 const dropZone = document.querySelector('#drop-zone');
-const maxWidthInput = document.querySelector('#max-width');
+const maxSideInput = document.querySelector('#max-side');
 const qualityInput = document.querySelector('#quality');
 const qualityValue = document.querySelector('#quality-value');
 const convertButton = document.querySelector('#convert-button');
@@ -16,7 +16,7 @@ const targetHeightInput = document.querySelector('#target-height');
 let selectedItems = [];
 let nextItemId = 0;
 let isConverting = false;
-let resizeMode = 'max-width';
+let resizeMode = 'max-side';
 
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -87,7 +87,7 @@ function updateSelection() {
   folderInput.disabled = isConverting;
   folderPickButton.disabled = isConverting;
   dropZone.disabled = isConverting;
-  maxWidthInput.disabled = isConverting;
+  maxSideInput.disabled = isConverting;
   targetWidthInput.disabled = isConverting;
   targetHeightInput.disabled = isConverting;
   qualityInput.disabled = isConverting;
@@ -253,7 +253,7 @@ function convertOne(item, resizeOptions, quality) {
       sourceX = (item.image.naturalWidth - sourceWidth) / 2;
       sourceY = (item.image.naturalHeight - sourceHeight) / 2;
     } else {
-      const scale = Math.min(1, resizeOptions.width / sourceWidth);
+      const scale = Math.min(1, resizeOptions.side / Math.max(sourceWidth, sourceHeight));
       width = Math.max(1, Math.round(sourceWidth * scale));
       height = Math.max(1, Math.round(sourceHeight * scale));
     }
@@ -289,7 +289,9 @@ function convertOne(item, resizeOptions, quality) {
 
 function makeUniqueName(item, usedNames) {
   const baseName = item.file.name.replace(/\.[^.]+$/, '');
-  const dimensions = item.mode === 'exact' ? `${item.width}x${item.height}px` : `${item.width}px`;
+  const dimensions = item.mode === 'exact'
+    ? `${item.width}x${item.height}px`
+    : `${Math.max(item.width, item.height)}px`;
   let name = `${baseName}-${dimensions}.webp`;
   let duplicate = 2;
   while (usedNames.has(name.toLowerCase())) {
@@ -370,13 +372,13 @@ async function convertImages() {
     }
     resizeOptions = { mode: 'exact', width, height };
   } else {
-    const width = Number.parseInt(maxWidthInput.value, 10);
-    if (!Number.isInteger(width) || width < 1 || width > 20000) {
-      showError('Inserisci una larghezza massima tra 1 e 20.000 px.');
-      maxWidthInput.focus();
+    const side = Number.parseInt(maxSideInput.value, 10);
+    if (!Number.isInteger(side) || side < 1 || side > 20000) {
+      showError('Inserisci un lato massimo tra 1 e 20.000 px.');
+      maxSideInput.focus();
       return;
     }
-    resizeOptions = { mode: 'max-width', width };
+    resizeOptions = { mode: 'max-side', side };
   }
   clearResults();
   isConverting = true;
@@ -436,7 +438,7 @@ qualityInput.addEventListener('input', () => {
   qualityValue.textContent = `${qualityInput.value}%`;
   clearResults();
 });
-maxWidthInput.addEventListener('input', clearResults);
+maxSideInput.addEventListener('input', clearResults);
 targetWidthInput.addEventListener('input', () => {
   document.querySelectorAll('.preset-button').forEach((button) => button.setAttribute('aria-pressed', 'false'));
   clearResults();
@@ -452,7 +454,7 @@ document.querySelectorAll('.mode-button').forEach((button) => {
     document.querySelectorAll('.mode-button').forEach((modeButton) => {
       modeButton.setAttribute('aria-pressed', String(modeButton === button));
     });
-    document.querySelector('#max-width-settings').hidden = resizeMode !== 'max-width';
+    document.querySelector('#max-side-settings').hidden = resizeMode !== 'max-side';
     document.querySelector('#exact-size-settings').hidden = resizeMode !== 'exact';
     errorMessage.hidden = true;
     clearResults();
