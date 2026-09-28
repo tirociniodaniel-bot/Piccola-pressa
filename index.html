@@ -7,7 +7,7 @@
     <title>Piccola Pressa - Convertitore WebP</title>
     <link rel="stylesheet" href="./style.css" />
     <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js" defer></script>
-    <script src="./app.js?v=2" defer></script>
+    <script src="./app.js?v=3" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -28,12 +28,35 @@
       <section class="converter" aria-label="Convertitore immagini WebP">
         <div class="settings-panel">
           <div class="section-heading"><span class="step-number">01</span><h2>Imposta l’uscita</h2></div>
-          <label class="field-label" for="max-width">Larghezza massima <span>pixel</span></label>
-          <div class="width-control">
-            <input id="max-width" type="number" min="1" max="20000" value="1000" inputmode="numeric" aria-describedby="width-help" />
-            <span class="unit">px</span>
+          <div class="mode-switch" role="group" aria-label="Metodo di ridimensionamento">
+            <button class="mode-button" type="button" data-mode="max-width" aria-pressed="true">Larghezza massima</button>
+            <button class="mode-button" type="button" data-mode="exact" aria-pressed="false">Dimensioni esatte</button>
           </div>
-          <p id="width-help" class="field-help">L’altezza si adatta automaticamente. Le immagini più piccole non vengono ingrandite.</p>
+          <div id="max-width-settings" class="mode-settings">
+            <label class="field-label" for="max-width">Larghezza massima <span>pixel</span></label>
+            <div class="width-control">
+              <input id="max-width" type="number" min="1" max="20000" value="1000" inputmode="numeric" aria-describedby="width-help" />
+              <span class="unit">px</span>
+            </div>
+            <p id="width-help" class="field-help">L’altezza si adatta automaticamente. Le immagini più piccole non vengono ingrandite.</p>
+          </div>
+          <div id="exact-size-settings" class="mode-settings" hidden>
+            <div class="exact-fields">
+              <div>
+                <label class="field-label" for="target-width">Larghezza</label>
+                <div class="width-control"><input id="target-width" type="number" min="1" max="20000" value="1486" inputmode="numeric" /><span class="unit">px</span></div>
+              </div>
+              <div>
+                <label class="field-label" for="target-height">Altezza</label>
+                <div class="width-control"><input id="target-height" type="number" min="1" max="20000" value="992" inputmode="numeric" /><span class="unit">px</span></div>
+              </div>
+            </div>
+            <div class="preset-options" role="group" aria-label="Dimensioni prestabilite">
+              <button class="preset-button" type="button" data-width="1486" data-height="992" aria-pressed="false"><span>T&amp;I</span><small>1486 × 992 px</small></button>
+              <button class="preset-button" type="button" data-width="1080" data-height="810" aria-pressed="false"><span>Innoeco</span><small>1080 × 810 px</small></button>
+            </div>
+            <p class="field-help crop-note">Mantiene le proporzioni e ritaglia dal centro per riempire le dimensioni scelte.</p>
+          </div>
 
           <div class="quality-heading"><label class="field-label" for="quality">Qualità WebP</label><output id="quality-value" for="quality">82%</output></div>
           <input id="quality" class="quality-slider" type="range" min="50" max="100" value="82" />

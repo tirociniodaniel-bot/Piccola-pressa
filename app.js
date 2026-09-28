@@ -7,10 +7,13 @@ const convertButton = document.querySelector('#convert-button');
 const errorMessage = document.querySelector('#error-message');
 const fileSummary = document.querySelector('#file-summary');
 const resultSection = document.querySelector('#result-section');
+const targetWidthInput = document.querySelector('#target-width');
+const targetHeightInput = document.querySelector('#target-height');
 
 let selectedItems = [];
 let nextItemId = 0;
 let isConverting = false;
+let resizeMode = 'max-width';
 
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -80,8 +83,13 @@ function updateSelection() {
   fileInput.disabled = isConverting;
   dropZone.disabled = isConverting;
   maxWidthInput.disabled = isConverting;
+  targetWidthInput.disabled = isConverting;
+  targetHeightInput.disabled = isConverting;
   qualityInput.disabled = isConverting;
   document.querySelector('#clear-files').disabled = isConverting;
+  document.querySelectorAll('.mode-button, .preset-button').forEach((button) => {
+    button.disabled = isConverting;
+  });
 }
 
 function removeImage(id) {
@@ -135,11 +143,27 @@ async function addImages(files) {
   if (errors.length) showError(errors.join(' '));
 }
 
-function convertOne(item, maxWidth, quality) {
+function convertOne(item, resizeOptions, quality) {
   return new Promise((resolve) => {
-    const scale = Math.min(1, maxWidth / item.image.naturalWidth);
-    const width = Math.max(1, Math.round(item.image.naturalWidth * scale));
-    const height = Math.max(1, Math.round(item.image.naturalHeight * scale));
+    let width;
+    let height;
+    let sourceX = 0;
+    let sourceY = 0;
+    let sourceWidth = item.image.naturalWidth;
+    let sourceHeight = item.image.naturalHeight;
+    if (resizeOptions.mode === 'exact') {
+      width = resizeOptions.width;
+      height = resizeOptions.height;
+      const scale = Math.max(width / sourceWidth, height / sourceHeight);
+      sourceWidth = width / scale;
+      sourceHeight = height / scale;
+      sourceX = (item.image.naturalWidth - sourceWidth) / 2;
+      sourceY = (item.image.naturalHeight - sourceHeight) / 2;
+    } else {
+      const scale = Math.min(1, resizeOptions.width / sourceWidth);
+      width = Math.max(1, Math.round(sourceWidth * scale));
+      height = Math.max(1, Math.round(sourceHeight * scale));
+    }
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -149,7 +173,11 @@ function convertOne(item, maxWidth, quality) {
       resolve();
       return;
     }
-    context.drawImage(item.image, 0, 0, width, height);
+    if (resizeOptions.mode === 'exact') {
+      context.drawImage(item.image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, height);
+    } else {
+      context.drawImage(item.image, 0, 0, width, height);
+    }
     canvas.toBlob((blob) => {
       if (!blob || blob.type !== 'image/webp') {
         item.error = 'Esportazione WebP non supportata da questo browser.';
@@ -157,6 +185,7 @@ function convertOne(item, maxWidth, quality) {
         item.blob = blob;
         item.width = width;
         item.height = height;
+        item.mode = resizeOptions.mode;
       }
       canvas.width = 0;
       canvas.height = 0;
@@ -167,10 +196,11 @@ function convertOne(item, maxWidth, quality) {
 
 function makeUniqueName(item, usedNames) {
   const baseName = item.file.name.replace(/\.[^.]+$/, '');
-  let name = `${baseName}-${item.width}px.webp`;
+  const dimensions = item.mode === 'exact' ? `${item.width}x${item.height}px` : `${item.width}px`;
+  let name = `${baseName}-${dimensions}.webp`;
   let duplicate = 2;
   while (usedNames.has(name.toLowerCase())) {
-    name = `${baseName}-${duplicate++}-${item.width}px.webp`;
+    name = `${baseName}-${duplicate++}-${dimensions}.webp`;
   }
   usedNames.add(name.toLowerCase());
   return name;
@@ -235,12 +265,25 @@ function renderResults() {
 
 async function convertImages() {
   errorMessage.hidden = true;
-  const maxWidth = Number.parseInt(maxWidthInput.value, 10);
   if (!selectedItems.length || isConverting) return;
-  if (!Number.isInteger(maxWidth) || maxWidth < 1 || maxWidth > 20000) {
-    showError('Inserisci una larghezza massima tra 1 e 20.000 px.');
-    maxWidthInput.focus();
-    return;
+  let resizeOptions;
+  if (resizeMode === 'exact') {
+    const width = Number.parseInt(targetWidthInput.value, 10);
+    const height = Number.parseInt(targetHeightInput.value, 10);
+    if (!Number.isInteger(width) || width < 1 || width > 20000 || !Number.isInteger(height) || height < 1 || height > 20000) {
+      showError('Inserisci larghezza e altezza tra 1 e 20.000 px.');
+      targetWidthInput.focus();
+      return;
+    }
+    resizeOptions = { mode: 'exact', width, height };
+  } else {
+    const width = Number.parseInt(maxWidthInput.value, 10);
+    if (!Number.isInteger(width) || width < 1 || width > 20000) {
+      showError('Inserisci una larghezza massima tra 1 e 20.000 px.');
+      maxWidthInput.focus();
+      return;
+    }
+    resizeOptions = { mode: 'max-width', width };
   }
   clearResults();
   isConverting = true;
@@ -248,7 +291,7 @@ async function convertImages() {
   for (const [index, item] of selectedItems.entries()) {
     convertButton.querySelector('span').textContent = `Conversione ${index + 1} di ${selectedItems.length}…`;
     item.error = null;
-    await convertOne(item, maxWidth, Number(qualityInput.value) / 100);
+    await convertOne(item, resizeOptions, Number(qualityInput.value) / 100);
   }
   isConverting = false;
   updateSelection();
@@ -293,6 +336,39 @@ qualityInput.addEventListener('input', () => {
   clearResults();
 });
 maxWidthInput.addEventListener('input', clearResults);
+targetWidthInput.addEventListener('input', () => {
+  document.querySelectorAll('.preset-button').forEach((button) => button.setAttribute('aria-pressed', 'false'));
+  clearResults();
+});
+targetHeightInput.addEventListener('input', () => {
+  document.querySelectorAll('.preset-button').forEach((button) => button.setAttribute('aria-pressed', 'false'));
+  clearResults();
+});
+document.querySelectorAll('.mode-button').forEach((button) => {
+  button.addEventListener('click', () => {
+    if (isConverting || resizeMode === button.dataset.mode) return;
+    resizeMode = button.dataset.mode;
+    document.querySelectorAll('.mode-button').forEach((modeButton) => {
+      modeButton.setAttribute('aria-pressed', String(modeButton === button));
+    });
+    document.querySelector('#max-width-settings').hidden = resizeMode !== 'max-width';
+    document.querySelector('#exact-size-settings').hidden = resizeMode !== 'exact';
+    errorMessage.hidden = true;
+    clearResults();
+  });
+});
+document.querySelectorAll('.preset-button').forEach((button) => {
+  button.addEventListener('click', () => {
+    if (isConverting) return;
+    targetWidthInput.value = button.dataset.width;
+    targetHeightInput.value = button.dataset.height;
+    document.querySelectorAll('.preset-button').forEach((presetButton) => {
+      presetButton.setAttribute('aria-pressed', String(presetButton === button));
+    });
+    errorMessage.hidden = true;
+    clearResults();
+  });
+});
 convertButton.addEventListener('click', convertImages);
 document.querySelector('#clear-files').addEventListener('click', clearFiles);
 document.querySelector('#download-all-button').addEventListener('click', downloadAll);
