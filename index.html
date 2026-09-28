@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#f4f3ed" />
     <title>Piccola Pressa - Convertitore WebP</title>
     <link rel="stylesheet" href="./style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js" defer></script>
     <script src="./app.js" defer></script>
   </head>
   <body>
@@ -42,39 +43,30 @@
         </div>
 
         <div class="upload-panel">
-          <div class="section-heading"><span class="step-number">02</span><h2>Aggiungi un’immagine</h2></div>
-          <input id="file-input" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" />
+          <div class="section-heading"><span class="step-number">02</span><h2>Aggiungi immagini</h2></div>
+          <input id="file-input" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" multiple />
           <button id="drop-zone" class="drop-zone" type="button" aria-describedby="file-help">
             <span class="upload-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M16 21V5m0 0L9.5 11.5M16 5l6.5 6.5M6 19v7h20v-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
-            <span class="drop-title">Trascina qui la tua immagine</span>
-            <span class="drop-or">oppure <span class="browse-link">scegli un file</span></span>
-            <span id="file-help" class="file-help">JPG, PNG o WebP · fino a 30 MB</span>
+            <span class="drop-title">Trascina qui le tue immagini</span>
+            <span class="drop-or">oppure <span class="browse-link">scegli più file</span></span>
+            <span id="file-help" class="file-help">JPG, PNG o WebP · massimo 30 MB per immagine</span>
           </button>
-          <div id="file-summary" class="file-summary" hidden>
-            <div class="file-icon" aria-hidden="true">IMG</div>
-            <div class="file-meta"><strong id="file-name"></strong><span id="file-details"></span></div>
-            <button id="remove-file" class="icon-button" type="button" aria-label="Rimuovi immagine" title="Rimuovi immagine">×</button>
+          <div id="selection-summary" class="selection-summary" hidden>
+            <span id="selection-count"></span>
+            <button id="clear-files" class="text-button" type="button">Rimuovi tutte</button>
           </div>
+          <ul id="selected-files" class="selected-files" aria-label="Immagini selezionate" hidden></ul>
           <p id="error-message" class="error-message" role="alert" hidden></p>
-          <button id="convert-button" class="convert-button" type="button" disabled><span>Converti in WebP</span><span aria-hidden="true">↗</span></button>
+          <button id="convert-button" class="convert-button" type="button" disabled><span>Converti immagini in WebP</span><span aria-hidden="true">↗</span></button>
         </div>
       </section>
 
       <section id="result-section" class="result-section" aria-labelledby="result-title" hidden>
         <div class="result-heading">
-          <div class="section-heading"><span class="step-number">03</span><h2 id="result-title">Pronta per il download</h2></div>
-          <button id="download-button" class="download-button" type="button"><span aria-hidden="true">↓</span> Scarica WebP</button>
+          <div class="section-heading"><span class="step-number">03</span><h2 id="result-title">Immagini pronte</h2></div>
+          <button id="download-all-button" class="download-button" type="button"><span aria-hidden="true">↓</span> Scarica tutte (.zip)</button>
         </div>
-        <div class="result-grid">
-          <div class="preview-frame"><img id="preview-image" alt="Anteprima dell’immagine convertita" /></div>
-          <div class="result-data">
-            <div class="result-file"><span class="webp-badge">WEBP</span><strong id="result-name"></strong></div>
-            <div class="stats-row"><span>Dimensioni</span><strong id="result-dimensions"></strong></div>
-            <div class="stats-row"><span>Peso originale</span><strong id="original-size"></strong></div>
-            <div class="stats-row"><span>Peso WebP</span><strong id="result-size"></strong></div>
-            <div id="saving-row" class="saving-row"><span id="saving-label">Risparmio</span><strong id="saving-value"></strong></div>
-          </div>
-        </div>
+        <div id="results-list" class="results-list" aria-live="polite"></div>
       </section>
       <footer class="footer"><span>Piccola Pressa</span><span>Immagini più leggere, senza compromessi sulle proporzioni.</span></footer>
     </main>

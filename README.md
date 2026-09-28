@@ -4,13 +4,13 @@ Web app leggera per ridimensionare immagini e convertirle in WebP. L’elaborazi
 
 ## Utilizzo
 
-Apri `index.html` in un browser aggiornato, trascina o seleziona un file JPG, PNG o WebP, imposta la larghezza massima e la qualità, quindi scegli **Converti in WebP** e scarica il risultato.
+Apri `index.html` in un browser aggiornato, trascina o seleziona più file JPG, PNG o WebP, imposta la larghezza massima e la qualità, quindi scegli **Converti immagini in WebP**. Scarica i risultati uno alla volta oppure tutti insieme in un archivio ZIP.
 
 La larghezza predefinita è 1000 px. L’altezza viene calcolata mantenendo le proporzioni; le immagini più piccole non vengono ingrandite. Il limite per immagine è 30 MB.
 
 ## Requisiti
 
-Nessuna installazione o server necessari. È richiesto un browser moderno con supporto a Canvas e WebP. Per avviarla in locale basta aprire `index.html`.
+Nessuna installazione o server necessari. È richiesto un browser moderno con supporto a Canvas e WebP. Per avviarla in locale basta aprire `index.html`. La creazione dello ZIP usa fflate 0.8.2 da jsDelivr e richiede una connessione internet; la conversione delle immagini resta locale e i file non vengono caricati.
 
 ## Pubblicazione su GitHub Pages
 
