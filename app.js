@@ -18,6 +18,13 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+function isSupportedImage(file) {
+  const mimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  const extensions = ['jpg', 'jpeg', 'png', 'webp'];
+  const extension = file.name.split('.').pop().toLowerCase();
+  return mimeTypes.includes(file.type) || extensions.includes(extension);
+}
+
 function showError(message) {
   errorMessage.textContent = message;
   errorMessage.hidden = false;
@@ -100,7 +107,7 @@ async function addImages(files) {
   errorMessage.hidden = true;
   const errors = [];
   const newItems = await Promise.all(files.map((file) => new Promise((resolve) => {
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    if (!isSupportedImage(file)) {
       errors.push(`${file.name}: formato non supportato.`);
       resolve(null);
       return;
