@@ -1,13 +1,8 @@
 const fileInput = document.querySelector('#file-input');
 const folderInput = document.querySelector('#folder-input');
 const folderPickButton = document.querySelector('#folder-pick-button');
-const uploadPanel = document.querySelector('.upload-panel');
 const previewPanel = document.querySelector('.preview-panel');
 const dropZone = document.querySelector('#drop-zone');
-const emptyAddButton = document.querySelector('#empty-add-button');
-const uploadStatus = document.querySelector('#upload-status');
-const uploadProgress = document.querySelector('#upload-progress');
-const fileCount = document.querySelector('#file-count');
 const clearFilesButton = document.querySelector('#clear-files');
 const importErrorsElement = document.querySelector('#import-errors');
 const maxSideInput = document.querySelector('#max-side');
@@ -34,12 +29,15 @@ const cropFormatLabel = document.querySelector('#crop-format-label');
 const cropKeptLabel = document.querySelector('#crop-kept-label');
 const cropExcludedLabel = document.querySelector('#crop-excluded-label');
 const cropDescription = document.querySelector('#crop-description');
+const cropActions = document.querySelector('#crop-actions');
+const resetCropButton = document.querySelector('#reset-crop-button');
 const previewDimensions = document.querySelector('#preview-dimensions');
 const fileStripWrap = document.querySelector('#file-strip-wrap');
 const fileStrip = document.querySelector('#file-strip');
 const stripCount = document.querySelector('#strip-count');
 const stripStatus = document.querySelector('#strip-status');
 const appliesCount = document.querySelector('#applies-count');
+const pageTitle = document.querySelector('#page-title');
 
 const state = {
   selectedItems: [],
@@ -52,12 +50,16 @@ const state = {
   resizeMode: 'max-side',
   conversionCurrentIndex: 0,
   conversionTotal: 0,
+  cropDrag: null,
 };
 
 const MAX_FILE_SIZE = 30 * 1024 * 1024;
 const MAX_DIMENSION = 20000;
 const SUPPORTED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const SUPPORTED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
+const CROP_KEYBOARD_STEP = 0.02;
+const CROP_KEYBOARD_STEP_LARGE = 0.1;
+const CROP_CENTER_TOLERANCE = 0.0005;
 
 function formatBytes(bytes) {
   if (!Number.isFinite(bytes) || bytes < 0) return '—';
@@ -250,10 +252,7 @@ async function addImages(files) {
   }
 
   state.isLoading = true;
-  uploadStatus.textContent = `Lettura di ${validFiles.length} ${validFiles.length === 1 ? 'immagine' : 'immagini'}…`;
   render();
-  uploadProgress.hidden = false;
-  uploadProgress.textContent = `Lettura di ${validFiles.length} ${validFiles.length === 1 ? 'immagine' : 'immagini'}…`;
 
   try {
     const decodedImages = await Promise.all(validFiles.map(decodeImage));
@@ -276,31 +275,166 @@ async function addImages(files) {
         width: null,
         height: null,
         mode: null,
+        cropPosition: { x: 0.5, y: 0.5 },
         isStale: false,
       });
     });
     state.selectedItems.push(...newItems);
     if (state.activeItemId === null && newItems.length) state.activeItemId = newItems[0].id;
-    uploadStatus.textContent = newItems.length
-      ? `${newItems.length} ${newItems.length === 1 ? 'immagine aggiunta' : 'immagini aggiunte'} al lotto.`
-      : 'Nessuna immagine valida è stata aggiunta.';
   } finally {
     state.isLoading = false;
-    uploadProgress.hidden = true;
     render();
   }
 }
 
-function computeCenteredCrop(sourceWidth, sourceHeight, targetWidth, targetHeight) {
+function computeCrop(sourceWidth, sourceHeight, targetWidth, targetHeight, position = { x: 0.5, y: 0.5 }) {
   const scale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
   const width = targetWidth / scale;
   const height = targetHeight / scale;
+  const centerX = Math.min(1 - width / sourceWidth / 2, Math.max(width / sourceWidth / 2, position.x));
+  const centerY = Math.min(1 - height / sourceHeight / 2, Math.max(height / sourceHeight / 2, position.y));
   return {
-    x: (sourceWidth - width) / 2,
-    y: (sourceHeight - height) / 2,
+    x: centerX * sourceWidth - width / 2,
+    y: centerY * sourceHeight - height / 2,
     width,
     height,
+    centerX,
+    centerY,
   };
+}
+
+function getCropGeometry(item = getActiveItem(), resizeOptions = getResizeOptions()) {
+  if (!item?.image || !resizeOptions || resizeOptions.error || resizeOptions.mode !== 'exact') return null;
+  const outputSize = getOutputDimensions(item, resizeOptions);
+  if (!outputSize) return null;
+  const sourceWidth = item.image.naturalWidth;
+  const sourceHeight = item.image.naturalHeight;
+  if (!sourceWidth || !sourceHeight) return null;
+  const crop = computeCrop(sourceWidth, sourceHeight, outputSize.width, outputSize.height, item.cropPosition);
+  const hasCrop = crop.width < sourceWidth - 0.5 || crop.height < sourceHeight - 0.5;
+  return { outputSize, crop, hasCrop, sourceWidth, sourceHeight };
+}
+
+function clampCropPosition(item, position) {
+  if (!position) return { x: 0.5, y: 0.5 };
+  const geometry = getCropGeometry(item);
+  if (!geometry) return { x: 0.5, y: 0.5 };
+  const normalizedWidth = geometry.crop.width / geometry.sourceWidth;
+  const normalizedHeight = geometry.crop.height / geometry.sourceHeight;
+  return {
+    x: Math.min(1 - normalizedWidth / 2, Math.max(normalizedWidth / 2, position.x)),
+    y: Math.min(1 - normalizedHeight / 2, Math.max(normalizedHeight / 2, position.y)),
+  };
+}
+
+function isCenteredCrop(item) {
+  return Math.abs(item.cropPosition.x - 0.5) < CROP_CENTER_TOLERANCE
+    && Math.abs(item.cropPosition.y - 0.5) < CROP_CENTER_TOLERANCE;
+}
+
+function commitCropChange(item) {
+  if (item.status === 'complete' && item.blob) item.isStale = true;
+  renderSettings();
+  renderStrip();
+  renderResults();
+  renderPreview();
+}
+
+function startCropDrag(event) {
+  const item = getActiveItem();
+  const geometry = getCropGeometry(item);
+  if (!geometry?.hasCrop || state.isConverting || state.isLoading) return;
+  if (event.button !== undefined && event.button !== 0) return;
+
+  const stageRect = previewStage.getBoundingClientRect();
+  const scale = Math.min(stageRect.width / geometry.sourceWidth, stageRect.height / geometry.sourceHeight);
+  if (!Number.isFinite(scale) || scale <= 0) return;
+
+  state.cropDrag = {
+    pointerId: event.pointerId,
+    itemId: item.id,
+    startX: event.clientX,
+    startY: event.clientY,
+    origin: { x: item.cropPosition.x, y: item.cropPosition.y },
+    renderedWidth: geometry.sourceWidth * scale,
+    renderedHeight: geometry.sourceHeight * scale,
+  };
+  cropWindow.classList.add('is-dragging');
+  if (typeof cropWindow.setPointerCapture === 'function') {
+    try {
+      cropWindow.setPointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture is an enhancement: dragging still works while the pointer stays over the window.
+    }
+  }
+  event.preventDefault();
+}
+
+function moveCropDrag(event) {
+  const drag = state.cropDrag;
+  if (!drag || (event.pointerId !== undefined && event.pointerId !== drag.pointerId)) return;
+  const item = state.selectedItems.find((entry) => entry.id === drag.itemId);
+  if (!item) {
+    endCropDrag(event);
+    return;
+  }
+  event.preventDefault();
+  const offsetX = drag.renderedWidth ? (event.clientX - drag.startX) / drag.renderedWidth : 0;
+  const offsetY = drag.renderedHeight ? (event.clientY - drag.startY) / drag.renderedHeight : 0;
+  item.cropPosition = clampCropPosition(item, { x: drag.origin.x + offsetX, y: drag.origin.y + offsetY });
+  renderPreview();
+}
+
+function endCropDrag(event) {
+  const drag = state.cropDrag;
+  if (!drag) return;
+  if (event?.pointerId !== undefined && event.pointerId !== drag.pointerId) return;
+  state.cropDrag = null;
+  cropWindow.classList.remove('is-dragging');
+  if (event?.pointerId !== undefined && typeof cropWindow.releasePointerCapture === 'function' && cropWindow.hasPointerCapture?.(event.pointerId)) {
+    try {
+      cropWindow.releasePointerCapture(event.pointerId);
+    } catch {
+      // The capture is released automatically when the pointer is removed.
+    }
+  }
+  const item = state.selectedItems.find((entry) => entry.id === drag.itemId);
+  if (!item) {
+    renderPreview();
+    return;
+  }
+  const moved = Math.abs(item.cropPosition.x - drag.origin.x) > CROP_CENTER_TOLERANCE
+    || Math.abs(item.cropPosition.y - drag.origin.y) > CROP_CENTER_TOLERANCE;
+  if (moved) commitCropChange(item);
+  else renderPreview();
+}
+
+function handleCropKeydown(event) {
+  const item = getActiveItem();
+  const geometry = getCropGeometry(item);
+  if (!geometry?.hasCrop || state.isConverting || state.isLoading) return;
+  const step = event.shiftKey ? CROP_KEYBOARD_STEP_LARGE : CROP_KEYBOARD_STEP;
+  let offsetX = 0;
+  let offsetY = 0;
+  if (event.key === 'ArrowLeft') offsetX = -step;
+  else if (event.key === 'ArrowRight') offsetX = step;
+  else if (event.key === 'ArrowUp') offsetY = -step;
+  else if (event.key === 'ArrowDown') offsetY = step;
+  else return;
+
+  event.preventDefault();
+  const next = clampCropPosition(item, { x: item.cropPosition.x + offsetX, y: item.cropPosition.y + offsetY });
+  if (Math.abs(next.x - item.cropPosition.x) < CROP_CENTER_TOLERANCE && Math.abs(next.y - item.cropPosition.y) < CROP_CENTER_TOLERANCE) return;
+  item.cropPosition = next;
+  commitCropChange(item);
+}
+
+function resetCropPosition() {
+  const item = getActiveItem();
+  const geometry = getCropGeometry(item);
+  if (!geometry?.hasCrop || state.isConverting || state.isLoading || isCenteredCrop(item)) return;
+  item.cropPosition = { x: 0.5, y: 0.5 };
+  commitCropChange(item);
 }
 
 function getResizeOptions() {
@@ -355,7 +489,7 @@ function convertOne(item, resizeOptions, quality) {
     }
 
     if (resizeOptions.mode === 'exact') {
-      const crop = computeCenteredCrop(sourceWidth, sourceHeight, width, height);
+      const crop = computeCrop(sourceWidth, sourceHeight, width, height, item.cropPosition);
       context.drawImage(item.image, crop.x, crop.y, crop.width, crop.height, 0, 0, width, height);
     } else {
       context.drawImage(item.image, 0, 0, width, height);
@@ -451,9 +585,7 @@ function renderImportErrors() {
 
 function renderStrip() {
   const items = state.selectedItems;
-  fileCount.hidden = items.length === 0;
   clearFilesButton.hidden = items.length === 0;
-  fileCount.textContent = `${items.length} ${items.length === 1 ? 'immagine' : 'immagini'} ${items.length === 1 ? 'aggiunta' : 'nel lotto'}`;
   appliesCount.textContent = items.length ? `Comune a ${items.length} ${items.length === 1 ? 'immagine' : 'immagini'}` : 'Comune a tutte le immagini';
   fileStripWrap.hidden = items.length === 0;
   fileStrip.replaceChildren();
@@ -508,6 +640,17 @@ function getStatusLabel(item) {
   return 'In coda';
 }
 
+function hideCropOverlay() {
+  cropWindow.hidden = true;
+  cropWindow.tabIndex = -1;
+  cropWindow.classList.remove('is-draggable', 'is-dragging');
+  cropWindow.removeAttribute('aria-label');
+  cropFormatLabel.hidden = true;
+  cropKeptLabel.hidden = true;
+  cropExcludedLabel.hidden = true;
+  cropActions.hidden = true;
+}
+
 function renderPreview() {
   const item = getActiveItem();
   const resizeOptions = getResizeOptions();
@@ -520,10 +663,7 @@ function renderPreview() {
   if (!item) {
     activeFileMeta.textContent = 'Scegli un’immagine per iniziare';
     activeFileBadge.textContent = '';
-    cropWindow.hidden = true;
-    cropFormatLabel.hidden = true;
-    cropKeptLabel.hidden = true;
-    cropExcludedLabel.hidden = true;
+    hideCropOverlay();
     cropDescription.textContent = '';
     previewDimensions.textContent = '';
     return;
@@ -540,26 +680,24 @@ function renderPreview() {
     cropDescription.textContent = resizeOptions.mode === 'exact'
       ? 'Inserisci larghezza e altezza tra 1 e 20.000 px.'
       : 'Inserisci un lato massimo tra 1 e 20.000 px.';
-    cropWindow.hidden = true;
-    cropFormatLabel.hidden = true;
-    cropKeptLabel.hidden = true;
-    cropExcludedLabel.hidden = true;
+    hideCropOverlay();
     return;
   }
 
   const outputSize = getOutputDimensions(item, resizeOptions);
   previewDimensions.textContent = `Dimensioni WebP previste · ${formatDimensions(outputSize.width, outputSize.height)}`;
   if (resizeOptions.mode !== 'exact') {
-    cropWindow.hidden = true;
-    cropFormatLabel.hidden = true;
-    cropKeptLabel.hidden = true;
-    cropExcludedLabel.hidden = true;
+    hideCropOverlay();
     cropDescription.textContent = '';
     return;
   }
 
-  const crop = computeCenteredCrop(item.image.naturalWidth, item.image.naturalHeight, outputSize.width, outputSize.height);
-  const hasCrop = crop.width < item.image.naturalWidth - 0.5 || crop.height < item.image.naturalHeight - 0.5;
+  const geometry = getCropGeometry(item, resizeOptions);
+  if (!geometry) {
+    hideCropOverlay();
+    return;
+  }
+  const { crop, hasCrop } = geometry;
   const formattedTarget = formatDimensions(outputSize.width, outputSize.height);
   cropFormatLabel.textContent = `FORMATO ${outputSize.width} × ${outputSize.height}`;
   cropWindow.hidden = !hasCrop;
@@ -567,15 +705,21 @@ function renderPreview() {
   cropKeptLabel.hidden = !hasCrop;
   cropExcludedLabel.hidden = !hasCrop;
   const cropTitle = document.createElement('strong');
-  cropTitle.textContent = 'Ritaglio centrale.';
+  const isCentered = isCenteredCrop(item);
+  cropTitle.textContent = isCentered ? 'Ritaglio centrale.' : 'Inquadratura personalizzata.';
   cropDescription.replaceChildren(
     cropTitle,
     document.createTextNode(hasCrop
-      ? ' Le fasce scure saranno escluse. L’inquadratura non si può riposizionare.'
+      ? ' Trascina la finestra per scegliere l’area da mantenere.'
       : ' Questa immagine ha già il rapporto scelto: i bordi restano interi.'),
   );
-  cropDescription.setAttribute('aria-label', hasCrop ? `Ritaglio centrale per ${formattedTarget}. Le fasce esterne vengono escluse.` : `Nessun ritaglio necessario per ${formattedTarget}.`);
+  cropDescription.setAttribute('aria-label', hasCrop ? `Ritaglio personalizzabile per ${formattedTarget}. Trascina la finestra per scegliere l’area da mantenere.` : `Nessun ritaglio necessario per ${formattedTarget}.`);
   updateCropOverlay(item, crop, hasCrop);
+  cropWindow.classList.toggle('is-draggable', hasCrop);
+  cropWindow.tabIndex = hasCrop ? 0 : -1;
+  cropWindow.setAttribute('aria-label', hasCrop ? 'Finestra di ritaglio trascinabile: usa le frecce o trascina per spostarla' : 'Nessun ritaglio necessario');
+  cropActions.hidden = !hasCrop || isCentered;
+  resetCropButton.disabled = cropActions.hidden || state.isConverting || state.isLoading;
 }
 
 function updateCropOverlay(item = getActiveItem(), crop = null, hasCrop = true) {
@@ -598,6 +742,7 @@ function updateCropOverlay(item = getActiveItem(), crop = null, hasCrop = true) 
 
 function renderSettings() {
   const isExact = state.resizeMode === 'exact';
+  pageTitle.textContent = isExact ? 'Controlla l’inquadratura.' : 'Ridimensiona le tue immagini.';
   document.querySelector('#max-side-settings').hidden = isExact;
   document.querySelector('#exact-size-settings').hidden = !isExact;
   document.querySelectorAll('.mode-button').forEach((button) => {
@@ -612,7 +757,7 @@ function renderSettings() {
   qualityValue.value = `${qualityInput.value}%`;
   qualityValue.textContent = `${qualityInput.value}%`;
   const controlsDisabled = state.isConverting || state.isLoading;
-  [fileInput, folderInput, folderPickButton, dropZone, emptyAddButton, maxSideInput, targetWidthInput, targetHeightInput, qualityInput, clearFilesButton].forEach((control) => {
+  [fileInput, folderInput, folderPickButton, dropZone, maxSideInput, targetWidthInput, targetHeightInput, qualityInput, clearFilesButton].forEach((control) => {
     if (control) control.disabled = controlsDisabled;
   });
   document.querySelectorAll('.mode-button, .preset-button, .item-action').forEach((button) => {
@@ -792,10 +937,6 @@ function render() {
   renderPreview();
   renderStrip();
   renderResults();
-  if (uploadProgress) {
-    uploadProgress.hidden = !state.isLoading;
-    if (state.isLoading) uploadProgress.textContent = 'Lettura delle immagini selezionate…';
-  }
 }
 
 function updateSettingsAfterChange() {
@@ -908,7 +1049,6 @@ folderInput.addEventListener('change', (event) => {
 folderPickButton.hidden = !('webkitdirectory' in document.createElement('input'));
 folderPickButton.addEventListener('click', () => folderInput.click());
 dropZone.addEventListener('click', () => fileInput.click());
-emptyAddButton.addEventListener('click', () => fileInput.click());
 function hasDraggedFiles(event) {
   return Array.from(event.dataTransfer?.types || []).includes('Files');
 }
@@ -937,8 +1077,15 @@ function bindFileDropTarget(target, onDragStateChange = () => {}) {
   });
 }
 
-bindFileDropTarget(uploadPanel, (isOver) => dropZone.classList.toggle('is-over', isOver));
 bindFileDropTarget(previewPanel);
+
+cropWindow.addEventListener('pointerdown', startCropDrag);
+cropWindow.addEventListener('pointermove', moveCropDrag);
+cropWindow.addEventListener('pointerup', endCropDrag);
+cropWindow.addEventListener('pointercancel', endCropDrag);
+cropWindow.addEventListener('lostpointercapture', endCropDrag);
+cropWindow.addEventListener('keydown', handleCropKeydown);
+resetCropButton.addEventListener('click', resetCropPosition);
 
 maxSideInput.addEventListener('input', updateSettingsAfterChange);
 targetWidthInput.addEventListener('input', updateSettingsAfterChange);

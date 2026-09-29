@@ -54,15 +54,6 @@ button:disabled { cursor: not-allowed; }
 h1 { margin: 0; font-size: clamp(30px, 3vw, 40px); line-height: 1.08; letter-spacing: -.045em; font-weight: 750; }
 .intro-copy { max-width: 510px; margin: 0 0 3px; color: var(--muted); font-size: 17px; line-height: 1.55; }
 
-.upload-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 14px 18px; margin-bottom: 22px; padding: 20px 22px; border: 1px solid var(--line); border-radius: var(--radius-panel); background: var(--paper); box-shadow: var(--shadow-panel); transition: border-color .18s ease, background .18s ease; }
-.upload-panel.is-over { border-color: var(--green); background: #f3f8ef; }
-.upload-copy { display: flex; min-width: 0; align-items: center; gap: 15px; }
-.upload-mark { display: grid; width: 48px; height: 48px; flex: none; place-items: center; border-radius: 15px; background: #edf3e8; color: var(--green); }
-.upload-mark svg { width: 25px; height: 25px; }
-.upload-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 11px; }
-.upload-title-row h2 { margin: 0; font-size: 20px; line-height: 1.25; letter-spacing: -.025em; }
-.upload-copy p { margin: 5px 0 0; color: var(--muted); font-size: 15px; line-height: 1.45; }
-.file-count { display: inline-flex; min-height: 30px; align-items: center; padding: 4px 10px; border-radius: 999px; background: var(--soft-green); color: #315e49; font-size: 14px; font-weight: 700; }
 .clear-files { min-height: 38px; padding: 0 8px; border: 0; background: transparent; color: var(--green); font-size: 14px; font-weight: 650; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .clear-files:hover { color: var(--green-dark); }
 .clear-files:disabled { opacity: .55; cursor: not-allowed; }
@@ -73,8 +64,6 @@ h1 { margin: 0; font-size: clamp(30px, 3vw, 40px); line-height: 1.08; letter-spa
 .drop-action { font-size: 16px; font-weight: 700; white-space: nowrap; }
 .folder-button { min-height: 49px; padding: 0 15px; border: 1px solid var(--line-strong); border-radius: var(--radius-control); background: var(--paper); color: #315e49; font-size: 15px; font-weight: 650; cursor: pointer; }
 .folder-button:hover { border-color: var(--green); background: #f7f9f4; }
-.privacy-note { grid-column: 1 / -1; margin: 0; padding-top: 12px; border-top: 1px solid #e8ebe5; color: var(--muted); font-size: 15px; line-height: 1.45; }
-.upload-progress { margin: -9px 0 16px; color: var(--muted); font-size: 15px; }
 
 .import-errors { display: grid; gap: 9px; margin: -6px 0 18px; }
 .import-error-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 14px; border: 1px solid #ebd9bd; border-radius: 11px; background: var(--warning-bg); color: #5d4a2c; font-size: 15px; line-height: 1.45; }
@@ -93,22 +82,32 @@ h1 { margin: 0; font-size: clamp(30px, 3vw, 40px); line-height: 1.08; letter-spa
 .preview-file-copy { min-width: 0; }
 .preview-header h2 { margin: 0; overflow: hidden; font-size: 18px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .file-meta { margin: 5px 0 0; overflow: hidden; color: var(--muted-soft); font: 14px/1.45 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+.preview-header-actions { display: flex; flex: none; align-items: center; gap: 10px; }
 .file-badge { flex: none; padding: 5px 8px; border-radius: 6px; background: #f2f4ef; color: var(--muted); font: 13px var(--mono); }
 .preview-empty { min-height: 410px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 11px; padding: 28px; background: #fbfcf8; color: var(--muted); text-align: center; }
 .empty-mark { width: 44px; height: 44px; display: grid; place-items: center; margin-bottom: 3px; border-radius: 50%; background: var(--soft-green); color: var(--green); font-size: 27px; line-height: 1; }
 .preview-empty strong { color: var(--ink); font-size: 19px; }
 .preview-empty > span:last-of-type { max-width: 360px; font-size: 15px; line-height: 1.5; }
-.secondary-button { min-height: 46px; margin-top: 7px; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: 10px; background: white; color: var(--green); font-size: 15px; font-weight: 700; cursor: pointer; }
-.secondary-button:hover { border-color: var(--green); background: #f5f8f1; }
+.preview-empty .drop-zone, .preview-empty .folder-button { width: min(100%, 320px); justify-content: center; }
+.preview-empty .file-help { margin: 4px 0 0; color: var(--muted-soft); font: 13px/1.5 var(--mono); }
 .preview-stage { position: relative; width: calc(100% - 40px); max-height: 560px; aspect-ratio: 4 / 3; margin: 20px auto 0; overflow: hidden; border-radius: 12px; background-color: #e4e7df; background-image: linear-gradient(45deg, #f4f5f0 25%, transparent 25%), linear-gradient(-45deg, #f4f5f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f4f5f0 75%), linear-gradient(-45deg, transparent 75%, #f4f5f0 75%); background-position: 0 0, 0 8px, 8px -8px, -8px 0; background-size: 16px 16px; }
 .preview-stage > img { width: 100%; height: 100%; display: block; object-fit: contain; }
 .crop-window { position: absolute; z-index: 2; border: 2px solid var(--lime); box-shadow: 0 0 0 100vmax rgb(19 43 33 / 54%); pointer-events: none; }
+.crop-window.is-draggable { pointer-events: auto; cursor: grab; touch-action: none; }
+.crop-window.is-draggable:active, .crop-window.is-dragging { cursor: grabbing; }
+.crop-window:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.crop-window.is-draggable::after { position: absolute; top: 50%; left: 50%; padding: 5px 11px; border-radius: 999px; background: rgb(255 255 255 / 90%); color: #17654d; font-size: 12px; font-weight: 750; letter-spacing: .02em; white-space: nowrap; box-shadow: 0 2px 8px rgb(16 36 26 / 28%); content: 'Sposta'; opacity: 0; transform: translate(-50%, -50%); transition: opacity .15s ease; pointer-events: none; }
+.crop-window.is-draggable:hover::after, .crop-window.is-draggable:focus-visible::after, .crop-window.is-dragging::after { opacity: 1; }
 .crop-format-label, .crop-kept-label, .crop-excluded-label { position: absolute; z-index: 3; padding: 6px 9px; border-radius: 7px; font-size: 13px; font-weight: 700; }
 .crop-format-label { top: 12px; left: 12px; background: rgb(24 54 45 / 92%); color: white; }
 .crop-kept-label { right: 12px; bottom: 13%; background: var(--paper); color: var(--ink); }
 .crop-excluded-label { bottom: 8px; left: 12px; padding: 2px 0; background: transparent; color: white; text-shadow: 0 1px 3px #10241a; }
 .crop-description { display: flex; gap: 9px; margin: 12px 20px 0; padding: 12px 14px; border-left: 3px solid #afcf78; border-radius: 0 10px 10px 0; background: #f4f7ef; color: #40584b; font-size: 15px; line-height: 1.5; }
 .preview-dimensions { margin: 10px 20px 0; color: var(--green); font: 14px/1.4 var(--mono); }
+.crop-actions { display: flex; justify-content: flex-end; margin: 9px 20px 0; }
+.crop-reset { min-height: 38px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--paper); color: #315e49; font-size: 14px; font-weight: 650; cursor: pointer; }
+.crop-reset:hover { border-color: var(--green); background: #f7f9f4; }
+.crop-reset:disabled { opacity: .55; cursor: not-allowed; }
 .file-strip-wrap { padding: 17px 20px 20px; }
 .file-strip-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 11px; }
 .file-strip-heading h3 { margin: 0; font-size: 16px; }
@@ -218,7 +217,6 @@ h1 { margin: 0; font-size: clamp(30px, 3vw, 40px); line-height: 1.08; letter-spa
   .intro-copy { max-width: 690px; }
   .workbench { grid-template-columns: 1fr; }
   .settings-panel { position: static; }
-  .upload-panel { grid-template-columns: minmax(0, 1fr) auto auto; }
   .preview-empty { min-height: 340px; }
   .result-item { grid-template-columns: 64px minmax(140px, 1fr) minmax(180px, .9fr) auto; gap: 11px; }
 }
@@ -236,18 +234,9 @@ h1 { margin: 0; font-size: clamp(30px, 3vw, 40px); line-height: 1.08; letter-spa
   .eyebrow { margin-bottom: 6px; font-size: 11px; }
   h1 { font-size: clamp(29px, 8vw, 34px); letter-spacing: -.04em; }
   .intro-copy { font-size: 16px; line-height: 1.5; }
-  .upload-panel { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; margin-bottom: 14px; padding: 15px; border-radius: 14px; }
-  .upload-copy { grid-column: 1 / -1; align-items: flex-start; gap: 11px; }
-  .upload-mark { width: 40px; height: 40px; border-radius: 12px; }
-  .upload-mark svg { width: 22px; height: 22px; }
-  .upload-title-row h2 { font-size: 18px; }
-  .upload-copy p { font-size: 14px; }
-  .file-count { min-height: 28px; font-size: 13px; }
-  .drop-zone { width: 100%; min-height: 48px; grid-column: 1; justify-content: center; padding: 8px 10px; }
+  .drop-zone { min-height: 48px; justify-content: center; padding: 8px 10px; }
   .drop-action { font-size: 14px; white-space: normal; text-align: center; }
-  .folder-button { min-height: 48px; grid-column: 2; padding: 0 11px; font-size: 13px; }
-  .privacy-note { grid-column: 1 / -1; gap: 8px; padding-top: 10px; font-size: 13px; }
-  .upload-progress { margin: 0 0 12px; font-size: 14px; }
+  .folder-button { min-height: 48px; padding: 0 11px; font-size: 13px; }
   .import-errors { gap: 8px; margin: 0 0 14px; }
   .import-error-row { align-items: flex-start; flex-direction: column; gap: 6px; padding: 10px 11px; font-size: 14px; }
   .import-error-actions { width: 100%; justify-content: flex-end; }
@@ -262,12 +251,15 @@ h1 { margin: 0; font-size: clamp(30px, 3vw, 40px); line-height: 1.08; letter-spa
   .preview-empty { min-height: 265px; padding: 22px 16px; }
   .preview-empty strong { font-size: 17px; }
   .preview-empty > span:last-of-type { font-size: 14px; }
+  .preview-empty .file-help { font-size: 12px; }
   .preview-stage { width: calc(100% - 26px); margin-top: 13px; border-radius: 10px; }
   .crop-format-label, .crop-kept-label, .crop-excluded-label { padding: 5px 7px; font-size: 12px; }
   .crop-format-label { top: 8px; left: 8px; }
   .crop-kept-label { right: 8px; bottom: 13%; }
   .crop-excluded-label { bottom: 6px; left: 8px; }
   .crop-description { margin: 10px 13px 0; padding: 10px 11px; font-size: 13px; }
+  .crop-actions { margin: 8px 13px 0; }
+  .crop-reset { min-height: 40px; font-size: 13px; }
   .preview-dimensions { margin: 8px 13px 0; font-size: 12px; }
   .file-strip-wrap { padding: 14px 13px 15px; }
   .file-strip-heading { align-items: flex-start; flex-direction: column; gap: 3px; }
@@ -331,7 +323,6 @@ h1 { margin: 0; font-size: clamp(30px, 3vw, 40px); line-height: 1.08; letter-spa
   .topbar-inner, .workspace { width: calc(100% - 24px); }
   .local-note { max-width: 145px; font-size: 11px; }
   .wordmark { font-size: 15px; }
-  .upload-panel { padding: 12px; }
   .folder-button { padding: 0 8px; font-size: 12px; }
   .settings-panel { padding: 14px 12px; }
   .applies-count { max-width: 102px; }

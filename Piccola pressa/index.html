@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./style.css" />
     <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js" defer></script>
-    <script src="./app.js?v=7" defer></script>
+    <script src="./app.js?v=8" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -27,34 +27,9 @@
     <main class="workspace">
       <section class="intro" aria-labelledby="page-title">
         <p class="eyebrow">CONVERTITORE WEBP · PICCOLA PRESSA</p>
-        <h1 id="page-title">Controlla l’inquadratura.</h1>
+        <h1 id="page-title">Ridimensiona le tue immagini.</h1>
         <p class="intro-copy">Scegli immagini, verifica il ritaglio e converti. Il peso finale si mostra solo quando il file è pronto.</p>
       </section>
-
-      <section class="upload-panel" aria-labelledby="upload-title">
-        <div class="upload-copy">
-          <span class="upload-mark" aria-hidden="true">
-            <svg viewBox="0 0 32 32" fill="none"><path d="M16 21V5m0 0L9.5 11.5M16 5l6.5 6.5M6 19v7h20v-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
-          </span>
-          <div>
-            <div class="upload-title-row">
-              <h2 id="upload-title">Immagini del lotto</h2>
-              <span id="file-count" class="file-count" hidden></span>
-              <button id="clear-files" class="clear-files" type="button" hidden>Rimuovi tutte</button>
-            </div>
-            <p id="file-help">JPG, PNG o WebP · massimo 30 MB per immagine · trascina o seleziona file</p>
-          </div>
-        </div>
-        <input id="file-input" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" multiple aria-label="Scegli immagini JPG, PNG o WebP" />
-        <button id="drop-zone" class="drop-zone" type="button" aria-describedby="file-help">
-          <span class="drop-action">＋ Aggiungi immagini</span>
-        </button>
-        <input id="folder-input" class="visually-hidden" type="file" webkitdirectory directory multiple aria-label="Seleziona una cartella di immagini" />
-        <button id="folder-pick-button" class="folder-button" type="button">Seleziona cartella</button>
-        <p class="privacy-note">Conversione locale nel browser: nessun file viene caricato.</p>
-        <p id="upload-status" class="sr-only" role="status" aria-live="polite"></p>
-      </section>
-      <p id="upload-progress" class="upload-progress" aria-live="polite" hidden></p>
 
       <div id="import-errors" class="import-errors" role="alert" aria-live="assertive" hidden></div>
 
@@ -65,22 +40,34 @@
               <h2 id="preview-title">Anteprima</h2>
               <p id="active-file-meta" class="file-meta">Scegli un’immagine per iniziare</p>
             </div>
-            <span id="active-file-badge" class="file-badge" hidden></span>
+            <div class="preview-header-actions">
+              <span id="active-file-badge" class="file-badge" hidden></span>
+              <button id="clear-files" class="clear-files" type="button" hidden>Rimuovi tutte</button>
+            </div>
           </div>
           <div id="preview-empty" class="preview-empty">
             <span class="empty-mark" aria-hidden="true">＋</span>
             <strong>La tua immagine, pronta per il web.</strong>
-            <span>Trascina qui immagini o una cartella, oppure selezionale dal pulsante qui sopra.</span>
-            <button id="empty-add-button" class="secondary-button" type="button">Scegli immagini</button>
+            <span>Trascina qui immagini o una cartella, oppure selezionale qui sotto.</span>
+            <input id="file-input" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" multiple aria-label="Scegli immagini JPG, PNG o WebP" />
+            <button id="drop-zone" class="drop-zone" type="button" aria-describedby="file-help">
+              <span class="drop-action">＋ Aggiungi immagini</span>
+            </button>
+            <input id="folder-input" class="visually-hidden" type="file" webkitdirectory directory multiple aria-label="Seleziona una cartella di immagini" />
+            <button id="folder-pick-button" class="folder-button" type="button">Seleziona cartella</button>
+            <p id="file-help" class="file-help">JPG, PNG o WebP · massimo 30 MB per immagine</p>
           </div>
           <div id="preview-stage" class="preview-stage" hidden>
             <img id="active-preview-image" alt="" />
-            <div id="crop-window" class="crop-window" aria-hidden="true" hidden></div>
+            <div id="crop-window" class="crop-window" role="group" aria-describedby="crop-description" tabindex="-1" hidden></div>
             <span id="crop-format-label" class="crop-format-label" hidden></span>
             <span id="crop-kept-label" class="crop-kept-label" hidden>Area mantenuta</span>
             <span id="crop-excluded-label" class="crop-excluded-label" hidden>Area esclusa</span>
           </div>
           <p id="crop-description" class="crop-description" hidden></p>
+          <div id="crop-actions" class="crop-actions" hidden>
+            <button id="reset-crop-button" class="crop-reset" type="button">Ricentra l’inquadratura</button>
+          </div>
           <div id="preview-dimensions" class="preview-dimensions" hidden></div>
           <div id="file-strip-wrap" class="file-strip-wrap" hidden>
             <div class="file-strip-heading">
@@ -117,7 +104,7 @@
               <button class="preset-button" type="button" data-width="1486" data-height="992" aria-pressed="false"><span>T&amp;I</span><small>1486 × 992 px</small></button>
               <button class="preset-button" type="button" data-width="1080" data-height="810" aria-pressed="false"><span>Innoeco</span><small>1080 × 810 px</small></button>
             </div>
-            <p id="crop-help" class="crop-note"><strong>Ritaglio centrale.</strong> Le fasce scure saranno escluse. L’inquadratura non si può riposizionare.</p>
+            <p id="crop-help" class="crop-note"><strong>Inquadratura personalizzabile.</strong> Ogni immagine parte dal ritaglio centrale: trascina la finestra nell’anteprima per scegliere l’area da mantenere, anche solo per alcune immagini.</p>
           </div>
           <div class="quality-block">
             <div class="quality-heading"><label class="field-label" for="quality">Qualità WebP</label><output id="quality-value" for="quality">82%</output></div>
