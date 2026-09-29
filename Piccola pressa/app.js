@@ -508,13 +508,9 @@ function getStatusLabel(item) {
   return 'In coda';
 }
 
-function getActiveResizeOptions() {
-  return getResizeOptions();
-}
-
 function renderPreview() {
   const item = getActiveItem();
-  const resizeOptions = getActiveResizeOptions();
+  const resizeOptions = getResizeOptions();
   previewEmpty.hidden = Boolean(item);
   previewStage.hidden = !item;
   activeFileBadge.hidden = !item;

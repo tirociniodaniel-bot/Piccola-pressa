@@ -70,7 +70,6 @@ h1 { margin: 0; font-size: clamp(30px, 3vw, 40px); line-height: 1.08; letter-spa
 .drop-zone:hover, .drop-zone.is-over { border-color: var(--green); background: #eff6e9; }
 .drop-zone:active { transform: scale(.99); }
 .drop-zone:disabled { opacity: .6; }
-.drop-prompt { display: none; }
 .drop-action { font-size: 16px; font-weight: 700; white-space: nowrap; }
 .folder-button { min-height: 49px; padding: 0 15px; border: 1px solid var(--line-strong); border-radius: var(--radius-control); background: var(--paper); color: #315e49; font-size: 15px; font-weight: 650; cursor: pointer; }
 .folder-button:hover { border-color: var(--green); background: #f7f9f4; }
