@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./style.css" />
     <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js" defer></script>
-    <script src="./app.js?v=8" defer></script>
+    <script src="./app.js?v=9" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -104,7 +104,16 @@
               <button class="preset-button" type="button" data-width="1486" data-height="992" aria-pressed="false"><span>T&amp;I</span><small>1486 × 992 px</small></button>
               <button class="preset-button" type="button" data-width="1080" data-height="810" aria-pressed="false"><span>Innoeco</span><small>1080 × 810 px</small></button>
             </div>
-            <p id="crop-help" class="crop-note"><strong>Inquadratura personalizzabile.</strong> Ogni immagine parte dal ritaglio centrale: trascina la finestra nell’anteprima per scegliere l’area da mantenere, anche solo per alcune immagini.</p>
+            <div id="crop-help" class="crop-note">
+              <div id="crop-preview" class="crop-preview" hidden>
+                <canvas id="crop-preview-canvas" class="crop-preview-canvas" width="1" height="1" role="img" aria-label="Anteprima della porzione selezionata"></canvas>
+              </div>
+              <div class="crop-copy">
+                <strong id="crop-help-title">Inquadratura personalizzabile</strong>
+                <span id="crop-help-text" class="crop-note-text">Ogni immagine parte dal ritaglio centrale: trascina la finestra nell’anteprima per scegliere l’area da mantenere, anche solo per alcune immagini.</span>
+                <span id="crop-preview-caption" class="crop-size" hidden></span>
+              </div>
+            </div>
           </div>
           <div class="quality-block">
             <div class="quality-heading"><label class="field-label" for="quality">Qualità WebP</label><output id="quality-value" for="quality">82%</output></div>

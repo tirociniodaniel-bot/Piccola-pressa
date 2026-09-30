@@ -147,8 +147,14 @@ h1 { margin: 0; font-size: clamp(30px, 3vw, 40px); line-height: 1.08; letter-spa
 .preset-button:hover, .preset-button[aria-pressed="true"] { border-color: var(--green); background: #f0f6e8; }
 .preset-button span { color: var(--ink); font-size: 14px; font-weight: 700; }
 .preset-button small { color: var(--muted); font: 12px var(--mono); }
-.crop-note { margin: 12px 0 0; padding: 11px 12px; border-left: 3px solid #afcf78; border-radius: 0 8px 8px 0; background: #f4f7ef; color: var(--muted); font-size: 14px; line-height: 1.45; }
+.crop-note { display: flex; align-items: center; gap: 13px; margin: 12px 0 0; padding: 11px 12px; border-left: 3px solid #afcf78; border-radius: 0 8px 8px 0; background: #f4f7ef; color: var(--muted); font-size: 14px; line-height: 1.45; }
 .crop-note strong { color: #344e40; }
+.crop-preview { width: 104px; height: 104px; display: grid; flex: none; place-items: center; overflow: hidden; border: 1px solid #dfe6d6; border-radius: 9px; background: #fffefa; }
+.crop-preview-canvas { display: block; }
+.crop-copy { min-width: 0; }
+.crop-copy strong { display: block; font-size: 15px; line-height: 1.35; }
+.crop-note-text { display: block; margin-top: 4px; }
+.crop-size { display: block; margin-top: 6px; color: var(--green); font: 13px/1.4 var(--mono); }
 .field-help { margin: 8px 0 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
 .settings-error { margin: 12px 0 0; padding: 9px 11px; border-radius: 8px; background: var(--danger-bg); color: var(--danger); font-size: 14px; line-height: 1.4; }
 .quality-block { margin-top: 19px; padding-top: 17px; border-top: 1px solid #e8ebe5; }
@@ -285,7 +291,7 @@ h1 { margin: 0; font-size: clamp(30px, 3vw, 40px); line-height: 1.08; letter-spa
   .preset-button { min-height: 45px; flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; }
   .preset-button span { font-size: 13px; }
   .preset-button small { font-size: 12px; }
-  .crop-note { margin-top: 10px; padding: 9px 10px; font-size: 14px; }
+  .crop-note { margin-top: 10px; padding: 9px 10px; gap: 11px; font-size: 14px; }
   .field-help { font-size: 14px; }
   .quality-block { margin-top: 15px; padding-top: 14px; }
   .quality-heading output { font-size: 14px; }

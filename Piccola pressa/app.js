@@ -31,6 +31,11 @@ const cropExcludedLabel = document.querySelector('#crop-excluded-label');
 const cropDescription = document.querySelector('#crop-description');
 const cropActions = document.querySelector('#crop-actions');
 const resetCropButton = document.querySelector('#reset-crop-button');
+const cropPreview = document.querySelector('#crop-preview');
+const cropPreviewCanvas = document.querySelector('#crop-preview-canvas');
+const cropPreviewCaption = document.querySelector('#crop-preview-caption');
+const cropHelpTitle = document.querySelector('#crop-help-title');
+const cropHelpText = document.querySelector('#crop-help-text');
 const previewDimensions = document.querySelector('#preview-dimensions');
 const fileStripWrap = document.querySelector('#file-strip-wrap');
 const fileStrip = document.querySelector('#file-strip');
@@ -60,6 +65,12 @@ const SUPPORTED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 const CROP_KEYBOARD_STEP = 0.02;
 const CROP_KEYBOARD_STEP_LARGE = 0.1;
 const CROP_CENTER_TOLERANCE = 0.0005;
+const CROP_PREVIEW_SIZE = 104;
+const PRESETS = Array.from(document.querySelectorAll('.preset-button')).map((button) => ({
+  label: button.querySelector('span')?.textContent.trim() || '',
+  width: Number(button.dataset.width),
+  height: Number(button.dataset.height),
+}));
 
 function formatBytes(bytes) {
   if (!Number.isFinite(bytes) || bytes < 0) return '—';
@@ -640,6 +651,52 @@ function getStatusLabel(item) {
   return 'In coda';
 }
 
+function getPresetLabel(width, height) {
+  const preset = PRESETS.find((entry) => entry.width === width && entry.height === height);
+  return preset ? preset.label : '';
+}
+
+function setCropHelp(title, text) {
+  cropHelpTitle.textContent = title;
+  cropHelpText.textContent = text;
+}
+
+function renderCropPreview(item, geometry) {
+  if (!item || !geometry) {
+    cropPreview.hidden = true;
+    cropPreviewCaption.hidden = true;
+    cropPreviewCaption.textContent = '';
+    return;
+  }
+
+  const ratio = geometry.outputSize.width / geometry.outputSize.height;
+  const displayWidth = ratio >= 1 ? CROP_PREVIEW_SIZE : Math.max(1, Math.round(CROP_PREVIEW_SIZE * ratio));
+  const displayHeight = ratio >= 1 ? Math.max(1, Math.round(CROP_PREVIEW_SIZE / ratio)) : CROP_PREVIEW_SIZE;
+  const density = Math.min(2, window.devicePixelRatio || 1);
+  const canvasWidth = Math.round(displayWidth * density);
+  const canvasHeight = Math.round(displayHeight * density);
+  if (cropPreviewCanvas.width !== canvasWidth || cropPreviewCanvas.height !== canvasHeight) {
+    cropPreviewCanvas.width = canvasWidth;
+    cropPreviewCanvas.height = canvasHeight;
+  }
+  cropPreviewCanvas.style.width = `${displayWidth}px`;
+  cropPreviewCanvas.style.height = `${displayHeight}px`;
+
+  const context = cropPreviewCanvas.getContext('2d');
+  if (!context) {
+    cropPreview.hidden = true;
+    return;
+  }
+  context.clearRect(0, 0, canvasWidth, canvasHeight);
+  context.drawImage(item.image, geometry.crop.x, geometry.crop.y, geometry.crop.width, geometry.crop.height, 0, 0, canvasWidth, canvasHeight);
+
+  const caption = `Anteprima · ${getPresetLabel(geometry.outputSize.width, geometry.outputSize.height)} ${formatDimensions(geometry.outputSize.width, geometry.outputSize.height)}`.replace('  ', ' ');
+  cropPreview.hidden = false;
+  cropPreviewCaption.textContent = caption;
+  cropPreviewCaption.hidden = false;
+  cropPreviewCanvas.setAttribute('aria-label', `Anteprima della porzione selezionata: ${formatDimensions(geometry.outputSize.width, geometry.outputSize.height)}`);
+}
+
 function hideCropOverlay() {
   cropWindow.hidden = true;
   cropWindow.tabIndex = -1;
@@ -666,6 +723,8 @@ function renderPreview() {
     hideCropOverlay();
     cropDescription.textContent = '';
     previewDimensions.textContent = '';
+    renderCropPreview(null, null);
+    setCropHelp('Dimensioni esatte', 'Aggiungi un’immagine per vedere qui l’anteprima della porzione selezionata.');
     return;
   }
 
@@ -681,6 +740,8 @@ function renderPreview() {
       ? 'Inserisci larghezza e altezza tra 1 e 20.000 px.'
       : 'Inserisci un lato massimo tra 1 e 20.000 px.';
     hideCropOverlay();
+    renderCropPreview(null, null);
+    setCropHelp('Dimensioni esatte', 'Inserisci larghezza e altezza tra 1 e 20.000 px per vedere l’anteprima.');
     return;
   }
 
@@ -689,12 +750,15 @@ function renderPreview() {
   if (resizeOptions.mode !== 'exact') {
     hideCropOverlay();
     cropDescription.textContent = '';
+    renderCropPreview(null, null);
+    setCropHelp('Inquadratura personalizzabile', 'Scegli Dimensioni esatte per ritagliare l’immagine e vedere l’anteprima della porzione selezionata.');
     return;
   }
 
   const geometry = getCropGeometry(item, resizeOptions);
   if (!geometry) {
     hideCropOverlay();
+    renderCropPreview(null, null);
     return;
   }
   const { crop, hasCrop } = geometry;
@@ -720,6 +784,13 @@ function renderPreview() {
   cropWindow.setAttribute('aria-label', hasCrop ? 'Finestra di ritaglio trascinabile: usa le frecce o trascina per spostarla' : 'Nessun ritaglio necessario');
   cropActions.hidden = !hasCrop || isCentered;
   resetCropButton.disabled = cropActions.hidden || state.isConverting || state.isLoading;
+  renderCropPreview(item, geometry);
+  setCropHelp(
+    isCentered ? 'Dimensioni esatte: ritaglio centrale' : 'Dimensioni esatte: inquadratura personalizzata',
+    hasCrop
+      ? `Trascina la finestra nell’anteprima per spostare l’inquadratura: il riquadro mostra la porzione selezionata di ${getDisplayName(item)}.`
+      : 'Questa immagine ha già il rapporto scelto: i bordi restano interi e la porzione coincide con l’immagine intera.',
+  );
 }
 
 function updateCropOverlay(item = getActiveItem(), crop = null, hasCrop = true) {
